@@ -21,7 +21,7 @@ CREATE_ENDPOINT = "https://www.instagram.com/accounts/web_create_ajax/attempt/"
 SMS_ENDPOINT = "https://i.instagram.com/api/v1/accounts/send_signup_sms_code/"
 
 PROXY_LIST = [
-    "http://user_1764739960_aa5c-zone-abc-region-NG:qzJcOGeQ@as.a455dd28c5cb69e2.abcproxy.vip:4950",
+    "http://user:pass@proxy1:port",
 ]
 
 RATE_LIMIT_DELAY = 180
@@ -433,92 +433,61 @@ def doc_handler(msg):
                 active_processes.pop(uid, None)
             return
         
-        # INITIAL LIVE MESSAGE
-        progress_msg = bot.send_message(msg.chat.id, "⏳ Preparing...")
+        bot.send_message(msg.chat.id, f"✅ Found {len(phones)} numbers\n🔄 Using proxy rotation\n🚀 Starting...")
         
         results = []
         use_proxy = True
         rate_hits = 0
         ip_flags = 0
-        success = 0
-        failed = 0
-        
-        total = len(phones)
         
         for i, phone in enumerate(phones, 1):
+            bot.send_message(msg.chat.id, f"📱 {i}/{len(phones)}: {phone}")
             
-            # RUN YOUR EXISTING SMS FUNCTION
             res = send_sms(phone, force_proxy=use_proxy)
-            res["phone"] = phone
-            res["idx"] = i
+            res['phone'] = phone
+            res['idx'] = i
             results.append(res)
-
-            # UPDATE STATS
-            if res.get("ok"):
-                success += 1
-            else:
-                failed += 1
-
-            if res.get("limited"):
-                rate_hits += 1
-
-            if res.get("ip_flagged"):
+            
+            if res.get('ip_flagged'):
                 ip_flags += 1
+                bot.send_message(msg.chat.id, "🚫 IP flagged on this request!")
+                
                 if ip_flags >= MAX_IP_FLAGS_BEFORE_STOP:
-                    bot.send_message(msg.chat.id, f"❌ Stopped after {ip_flags} IP flags!")
+                    bot.send_message(msg.chat.id, f"❌ Stopped after {ip_flags} IP flags.\nToo many blocks!")
                     break
-
-            # PROGRESS BAR
-            percent = int((i / total) * 100)
-            bar = make_progress_bar(percent)
-
-            progress_text = (
-                f"{bar}\n"
-                f"🔄 Processing: {percent}% ({i}/{total})\n\n"
-                f"📊 **Stats**\n"
-                f"✅ Success: {success}\n"
-                f"❌ Failed: {failed}\n"
-                f"⚠️ Rate Limits: {rate_hits}\n"
-                f"🚫 IP Flags: {ip_flags}\n\n"
-                f"📱 Last processed: {phone}"
-            )
-
-            # UPDATE LIVE MESSAGE
-            try:
-                bot.edit_message_text(
-                    chat_id=msg.chat.id,
-                    message_id=progress_msg.message_id,
-                    text=progress_text,
-                    parse_mode="Markdown"
-                )
-            except:
-                pass
-
-            # RATE LIMIT COOL DOWN
-            if res.get("limited"):
+            
+            if res.get('limited'):
+                rate_hits += 1
+                bot.send_message(msg.chat.id, f"⚠️ Rate limit! Waiting {RATE_LIMIT_DELAY}s...")
                 time.sleep(RATE_LIMIT_DELAY)
-
-            # BATCH COOLDOWN
-            if i % BATCH_SIZE == 0 and i < total:
-                delay = random.randint(120, 180)
-                time.sleep(delay)
+            
+            if res['ok']:
+                proxy_info = res.get('proxy', 'N/A')[:30]
+                bot.send_message(msg.chat.id, f"✅ SMS sent via {proxy_info}")
             else:
-                if i < total:
-                    time.sleep(random.randint(3, 7))
+                err = res.get('err', 'Unknown')[:70]
+                bot.send_message(msg.chat.id, f"❌ Failed: {err}")
+            
+            if i % BATCH_SIZE == 0 and i < len(phones):
+                delay = random.randint(120, 180)
+                bot.send_message(msg.chat.id, f"⏸️ Batch {i//BATCH_SIZE} done. Cooling down {delay}s...")
+                time.sleep(delay)
+            elif i < len(phones):
+                time.sleep(random.randint(3, 7))
         
-        # BUILD LOG FILE
-        log = "=" * 60 + "\n"
-        log += "PROCESS LOG\n"
+        log = "="*50 + "\n"
+        log += "INSTAGRAM SMS LOG\n"
         log += f"Date: {datetime.now()}\n"
-        log += "=" * 60 + "\n\n"
-
+        log += "="*50 + "\n\n"
+        
         ok_count = 0
         fail_count = 0
         
         for r in results:
-            log += "-" * 40 + "\n"
+            log += "="*50 + "\n"
             log += f"Phone: {r['phone']}\n"
             log += f"Status: {'SUCCESS' if r['ok'] else 'FAILED'}\n"
+            
             if r['ok']:
                 ok_count += 1
                 log += f"Username: {r['user']}\n"
@@ -528,24 +497,28 @@ def doc_handler(msg):
             else:
                 fail_count += 1
                 log += f"Error: {r.get('err', 'Unknown')}\n"
+                if r.get('user'):
+                    log += f"Username: {r['user']}\n"
+                    log += f"Password: {r['pass']}\n"
                 if r.get('ip_flagged'):
                     log += "IP_FLAGGED: YES\n"
-            log += "-" * 40 + "\n\n"
-
-        summary = (
-            f"📊 **Summary**\n\n"
-            f"Total: {len(phones)}\n"
-            f"✅ Success: {ok_count}\n"
-            f"❌ Failed: {fail_count}\n"
-            f"⚠️ Rate limits: {rate_hits}\n"
-            f"🚫 IP flags: {ip_flags}\n\n"
-            f"📄 Log file below"
-        )
+            
+            log += "="*50 + "\n\n"
+        
+        summary = f"📊 Summary\n\n"
+        summary += f"Total: {len(phones)}\n"
+        summary += f"✅ Success: {ok_count}\n"
+        summary += f"❌ Failed: {fail_count}\n"
+        summary += f"⚠️ Rate limits: {rate_hits}\n"
+        summary += f"🚫 IP flags: {ip_flags}\n\n"
+        summary += f"📄 Log file below"
         
         bot.send_message(msg.chat.id, summary)
         
-        log_file = BytesIO(log.encode("utf-8"))
-        log_file.name = f"log_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
+        log_name = f"log_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
+        log_file = BytesIO(log.encode('utf-8'))
+        log_file.name = log_name
+        
         bot.send_document(msg.chat.id, log_file, caption="📋 Complete log")
         
     except Exception as e:
