@@ -11,7 +11,7 @@ from telebot import types
 from io import BytesIO
 import threading
 
-BOT_TOKEN = "8474094509:AAGqWT_fyBOQpY2gwIQ5O3GShT5-wdKeVbI"
+BOT_TOKEN = "7806423269:AAGQSX-nZMwzD2vLMqrktfJVdqCNSaejYn4"
 ADMIN_IDS = [6109365101, 5090817443]  # Replace with actual admin Telegram IDs
 
 bot = telebot.TeleBot(BOT_TOKEN)
