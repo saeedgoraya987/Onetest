@@ -24,10 +24,10 @@ PROXY_LIST = [
     "http://59cc75eae6269b609ae7_cr.sd:8993a1fdf9a0a427@gw.dataimpulse.com:824",
 ]
 
-RATE_LIMIT_DELAY = 180
+RATE_LIMIT_DELAY = 10
 USE_PROXY_AFTER_RATE_LIMIT = True
 MAX_IP_FLAGS_BEFORE_STOP = 5
-BATCH_SIZE = 10
+BATCH_SIZE = 1000
 BATCH_DELAY = random.randint(120, 180)
 
 processing_lock = threading.Lock()
