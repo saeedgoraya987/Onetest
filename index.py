@@ -21,7 +21,7 @@ CREATE_ENDPOINT = "https://www.instagram.com/accounts/web_create_ajax/attempt/"
 SMS_ENDPOINT = "https://i.instagram.com/api/v1/accounts/send_signup_sms_code/"
 
 PROXY_LIST = [
-    "http://user:pass@proxy1:port",
+    "http://user_1765813949_2604-zone-abc-region-SD:LERB3FBV@as.a455dd28c5cb69e2.abcproxy.vip:4950",
 ]
 
 RATE_LIMIT_DELAY = 180
