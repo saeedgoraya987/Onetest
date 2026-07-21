@@ -1,0 +1,13 @@
+{
+  "name": "vercel-otp-api",
+  "version": "1.0.0",
+  "description": "OTP Manager Agent API for Vercel",
+  "main": "api/functions.js",
+  "scripts": {
+    "dev": "vercel dev",
+    "deploy": "vercel deploy --prod"
+  },
+  "devDependencies": {
+    "vercel": "^34.0.0"
+  }
+}
